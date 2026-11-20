@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2a52">
+<title>Speed Dépannage — Énergie &amp; Maintenance</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="config.js"></script>
+<script src="config.local.js"></script><!-- optionnel : tests locaux, non versionné -->
+<style>
+:root{--navy:#0f2a52;--navy2:#1a427a;--red:#e63946;--gold:#c98a00;--bg:#fff;--bg-soft:#f5f7fb;--line:#dbe3ee;--ink:#0f2a52;--ink-soft:#52627d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;padding-bottom:80px}
+h1,h2,h3{font-family:'Bebas Neue',sans-serif;text-transform:uppercase;line-height:1;letter-spacing:.01em}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+
+/* Header */
+.top{position:sticky;top:0;z-index:50;background:#fff;border-bottom:3px solid var(--gold);box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.top-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px}
+.logo{display:flex;align-items:center;gap:8px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+.logo-m{width:36px;height:36px;border-radius:9px;background:linear-gradient(155deg,var(--red),#c22f3b);color:#fff;display:grid;place-items:center;font-family:'Bebas Neue',sans-serif;font-size:17px}
+.logo b{font-family:'Bebas Neue',sans-serif;color:var(--red);font-size:20px;letter-spacing:.06em;line-height:1}
+.logo small{display:block;font-size:8px;letter-spacing:.2em;color:var(--ink-soft);font-weight:700}
+.burger{width:40px;height:40px;border-radius:9px;background:var(--bg-soft);font-size:20px;color:var(--ink)}
+.menu{display:none;flex-direction:column;padding:8px 14px 14px;border-top:1px solid var(--line)}
+.menu.open{display:flex}
+.menu a{padding:12px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer}
+.menu a:active{background:var(--bg-soft)}
+
+/* Slider */
+.slider{position:relative;height:450px;overflow:hidden}
+.slide{position:absolute;inset:0;opacity:0;transition:opacity .8s ease-in-out;display:flex;flex-direction:column;justify-content:center;padding:0 24px;color:#fff;background-size:cover;background-position:center;}
+.slide.active{opacity:1;z-index:10}
+.slide-content{max-width:600px;position:relative;z-index:2}
+.slide h1{font-size:3rem;line-height:1;margin-bottom:16px;color:#fff}
+.slide h1 span{color:#f7c948}
+.slide p{font-size:1.1rem;margin-bottom:24px;color:rgba(255,255,255,.85)}
+.slide-overlay{position:absolute;inset:0;background:linear-gradient(90deg, rgba(8,26,51,.95) 0%, rgba(8,26,51,.7) 50%, transparent 100%);z-index:1}
+.slider-dots{position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:12px;z-index:20}
+.dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:.3s}
+.dot.active{background:#f7c948;transform:scale(1.2)}
+
+/* Sections & Grilles */
+section{padding:36px 16px}
+.eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);font-weight:700;margin-bottom:8px;display:block}
+h1{font-size:2.4rem;color:var(--navy);margin-bottom:14px}
+h2{font-size:1.9rem;color:var(--navy);margin-bottom:10px}
+.sub{font-size:14px;color:var(--ink-soft);margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Boutons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:10px;font-weight:700;font-size:14px;min-height:48px;text-align:center;transition:.15s}
+.btn-primary{background:var(--red);color:#fff}
+.btn-navy{background:var(--navy);color:#fff}
+.btn-outline{background:#fff;color:var(--navy);border:1.5px solid var(--line)}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-block{width:100%}
+
+/* Pôles */
+.pole{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;transition:.15s}
+.pole:active{transform:scale(.98);background:var(--bg-soft)}
+.pole-ic{width:48px;height:48px;border-radius:12px;background:var(--bg-soft);display:grid;place-items:center;font-size:24px;flex-shrink:0}
+.pole-tx{flex:1}
+.pole-tx b{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;display:block;color:var(--navy)}
+.pole-tx span{font-size:12px;color:var(--ink-soft)}
+
+/* Section Speed Connect */
+.sc-section{background:linear-gradient(140deg,#081a33,#0f2a52);color:#fff;padding:40px 16px;margin:0}
+.sc-header{text-align:center;margin-bottom:24px}
+.sc-header h2{color:#fff;font-size:2.2rem}
+.sc-header p{color:rgba(255,255,255,.8);margin-bottom:20px}
+.sc-images{display:grid;grid-template-columns:1fr;gap:16px}
+.sc-img{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 24px rgba(0,0,0,.4);object-fit:cover;}
+
+/* Cartes & Articles */
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px;display:flex;flex-direction:column;}
+.card-tag{display:inline-block;font-size:10px;font-weight:700;background:var(--bg-soft);color:var(--ink-soft);padding:3px 9px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;width:max-content;}
+.card-price{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--red);margin:8px 0 12px}
+.article-img{width:100%;height:180px;background:#eef2f7;border-radius:8px;object-fit:cover;margin-bottom:12px;border:1px dashed #dbe3ee;}
+
+/* Accordéons */
+.accordion{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.accordion-head{padding:16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;gap:10px}
+.accordion-head b{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--navy)}
+.accordion-head span{font-size:13px;color:var(--red);font-weight:700;text-align:right}
+.accordion-body{display:none;padding:0 16px 16px;font-size:13px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:14px}
+.accordion.open .accordion-body{display:block}
+.accordion-body p{margin-bottom:8px}
+
+/* Simulateur */
+.sim{background:var(--bg-soft);border-radius:14px;padding:18px;margin-bottom:16px}
+.sim label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-soft);letter-spacing:.04em;margin-bottom:6px}
+.sim select,.sim input{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-bottom:12px;background:#fff;font-family:inherit}
+.sim-result{background:var(--navy);color:#fff;border-radius:12px;padding:18px;text-align:center}
+.sim-result small{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.75;display:block;margin-bottom:6px}
+.sim-result b{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:#f7c948;display:block}
+
+/* Formulaires */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.04em}
+.field input,.field select,.field textarea{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit}
+.field textarea{resize:vertical;min-height:100px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--red)}
+
+/* Admin */
+.admin{padding:24px 16px;background:var(--bg-soft);min-height:60vh}
+.admin-gate{max-width:420px;margin:20px auto;background:#fff;border-radius:16px;padding:28px 22px;text-align:center}
+.admin-gate input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;margin-bottom:10px;text-align:center;font-family:inherit}
+.admin-tab{display:flex;gap:4px;overflow-x:auto;margin-bottom:16px;padding-bottom:8px}
+.admin-tab button{padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;background:#fff;border:1px solid var(--line)}
+.admin-tab button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.admin-edit{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--line);}
+.admin-edit label{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;text-transform:uppercase;margin-top:8px;}
+.admin-edit input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-bottom:8px;font-family:inherit}
+.admin-del{background:#e5484d;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;margin-top:8px;cursor:pointer;}
+.admin-save{background:var(--red);color:#fff;padding:14px;border-radius:10px;font-size:14px;font-weight:700;width:100%;margin-top:12px;cursor:pointer;}
+
+/* Divers */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px}
+.chip{padding:8px 14px;border-radius:20px;background:#fff;border:1.5px solid var(--line);font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;}
+.chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.search{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-bottom:12px;font-family:inherit}
+.view{display:none}
+.view.active{display:block}
+.sticky-cta{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;z-index:40;box-shadow:0 -4px 16px rgba(0,0,0,.06);padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+.sticky-cta .btn{flex:1;padding:12px;font-size:13px;min-height:44px}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:100;opacity:0;transition:.3s;max-width:90%}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.ok{background:#10b981}
+.toast.err{background:#e5484d}
+footer{background:#081a33;color:rgba(255,255,255,.7);padding:24px 16px;font-size:12px;text-align:center}
+footer a{color:#f7c948;display:inline-block;margin-top:8px}
+
+/* Responsive */
+@media (min-width:768px){
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .sc-images{grid-template-columns:1fr 1fr;}
+  .slider{height:600px;}
+  .slide h1{font-size:4rem;}
+  #locCards, #venteCards, #piecesList{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+}
+@media (min-width:1024px){
+  #locCards, #venteCards, #piecesList{grid-template-columns:repeat(3, 1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="top">
+  <div class="top-row">
+    <div class="logo" onclick="logoClick()">
+      <div class="logo-m">SD</div>
+      <div>
+        <b>SPEED DÉPANNAGE</b>
+        <small>CÔTE D'IVOIRE</small>
+      </div>
+    </div>
+    <button class="burger" onclick="document.getElementById('menu').classList.toggle('open')">☰</button>
+  </div>
+  <nav class="menu" id="menu">
+    <a onclick="go('accueil')">Accueil</a>
+    <a onclick="go('location')">Location</a>
+    <a onclick="go('vente')">Vente</a>
+    <a onclick="go('coffrets')">Coffrets sur Mesure</a>
+    <a onclick="go('maintenance')">Maintenance</a>
+    <a onclick="go('pieces')">Pièces Détachées</a>
+    <a href="https://savprorci.github.io/SpeedConnect" target="_blank" style="color:var(--gold); font-weight:800;">📡 Ouvrir Speed Connect ↗</a>
+    <a onclick="go('contact')">Contact</a>
+  </nav>
+</div>
+
+<!-- VUE : ACCUEIL -->
+<main id="view-accueil" class="view active">
+  <!-- SLIDER DYNAMIQUE -->
+  <div class="slider" id="homeSlider">
+    <!-- Les slides sont générées par JS (conteneur séparé des points) -->
+    <div id="sliderSlides"></div>
+    <div class="slider-dots" id="sliderDots"></div>
+  </div>
+
+  <section>
+    <span class="eyebrow">Nos pôles</span>
+    <h2>Une offre complète</h2>
+    <div class="grid-2">
+      <div class="pole" onclick="go('location')">
+        <div class="pole-ic">🚜</div>
+        <div class="pole-tx"><b>Location</b><span>Groupes & engins TP</span></div>
+      </div>
+      <div class="pole" onclick="go('vente')">
+        <div class="pole-ic">🏭</div>
+        <div class="pole-tx"><b>Vente</b><span>Équipements industriels</span></div>
+      </div>
+      <div class="pole" onclick="go('coffrets')">
+        <div class="pole-ic">⚡</div>
+        <div class="pole-tx"><b>Coffrets sur Mesure</b><span>Conception & fabrication</span></div>
+      </div>
+      <div class="pole" onclick="go('maintenance')">
+        <div class="pole-ic">🛠️</div>
+        <div class="pole-tx"><b>Maintenance</b><span>Speed Dépannage</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sc-section">
+    <div class="sc-header">
+      <span class="eyebrow" style="color:#f7c948">Développé par Speed Dépannage</span>
+      <h2 style="color:#fff">Speed Connect</h2>
+      <p>Vos équipements pilotés où que vous soyez. Alertes en temps réel, maintenance prédictive.</p>
+      <a href="https://savprorci.github.io/SpeedConnect" target="_blank" class="btn btn-gold btn-block">Ouvrir Speed Connect ↗</a>
+    </div>
+    <!-- IMAGES SPEED CONNECT DYNAMIQUES -->
+    <div class="sc-images" id="scImagesContainer">
+      <!-- Géré par JS -->
+    </div>
+  </section>
+</main>
+
+<!-- VUE : LOCATION -->
+<main id="view-location" class="view">
+  <section>
+    <span class="eyebrow">Location</span>
+    <h1>Louez votre énergie</h1>
+    <p class="sub">Tarif dégressif, maintenance incluse, astreinte 24/7.</p>
+    <div class="sim">
+      <h3 style="margin-bottom:14px">Simulateur</h3>
+      <label>Capacité (kVA)</label>
+      <select id="simKva">
+        <option value="10">10 kVA</option><option value="20">20 kVA</option><option value="30">30 kVA</option>
+        <option value="50" selected>50 kVA</option><option value="100">100 kVA</option><option value="150">150 kVA</option>
+        <option value="250">250 kVA</option><option value="500">500 kVA</option>
+      </select>
+      <label>Durée (semaines)</label>
+      <input type="number" id="simWeeks" value="4" min="1" max="52">
+      <div class="sim-result"><small>Total estimé</small><b id="simTotal">0 FCFA</b></div>
+      <p style="font-size:11px;color:var(--ink-soft);margin-top:10px">Caution 50% · Transport selon localisation · Carburant à charge client · Engagement ferme</p>
+    </div>
+    <h2 style="margin-top:24px;margin-bottom:14px">Notre parc</h2>
+    <div id="locCards"></div>
+  </section>
+</main>
+
+<!-- VUE : VENTE -->
+<main id="view-vente" class="view">
+  <section>
+    <span class="eyebrow">Vente</span>
+    <h1>Équipements industriels</h1>
+    <p class="sub">Devis pro en 24h. Tarifs dégressifs B2B.</p>
+    <div id="venteCards"></div>
+  </section>
+</main>
+
+<!-- VUE : COFFRETS -->
+<main id="view-coffrets" class="view">
+  <section>
+    <span class="eyebrow">Coffrets</span>
+    <h1>Sur mesure</h1>
+    <p class="sub">Conception selon cahier des charges. Composants Schneider & Legrand.</p>
+    <div class="field"><label>Type</label><select id="cfType"><option>Armoire électrique</option><option>Coffret de commande</option><option>Coffret de télégestion</option></select></div>
+    <div class="field"><label>Indice IP</label><select id="cfIp"><option>IP54</option><option>IP55</option><option>IP65</option></select></div>
+    <div class="field"><label>Nombre de départs</label><input type="number" id="cfDeparts" value="8" min="1"></div>
+    <div class="field"><label>Calibre disjoncteurs</label><input type="text" id="cfCalibre" placeholder="32A, 63A..."></div>
+    <div class="field"><label>Besoins</label><textarea id="cfBesoins" placeholder="Décrivez votre projet..."></textarea></div>
+    <button class="btn btn-primary btn-block" onclick="coffretToContact()">Continuer vers le contact</button>
+  </section>
+</main>
+
+<!-- VUE : MAINTENANCE -->
+<main id="view-maintenance" class="view">
+  <section>
+    <span class="eyebrow">Speed Dépannage</span>
+    <h1>Forfaits maintenance</h1>
+    <p class="sub">Un forfait, pas une facture surprise. &lt; 1h à Abidjan.</p>
+    <div id="forfaitsList"></div>
+    <h2 style="margin-top:24px;margin-bottom:14px">Options</h2>
+    <div class="card"><span class="card-tag">Audit flash</span><p style="font-size:13px;color:var(--ink-soft);margin-bottom:6px">Inspection visuelle + test démarrage</p><b style="color:var(--red)">75 000 – 150 000 FCFA</b></div>
+    <div class="card"><span class="card-tag">Audit conformité</span><p style="font-size:13px;color:var(--ink-soft);margin-bottom:6px">Vérification NF C 15-100</p><b style="color:var(--red)">150 000 – 350 000 FCFA</b></div>
+    <div class="card"><span class="card-tag">Speed Connect</span><p style="font-size:13px;color:var(--ink-soft);margin-bottom:6px">Supervision à distance</p><b style="color:var(--red)">15 000 – 30 000 FCFA/mois</b></div>
+    <button class="btn btn-navy btn-block" style="margin-top:16px" onclick="showCGV()">📄 Voir les CGV</button>
+  </section>
+</main>
+
+<!-- VUE : PIÈCES -->
+<main id="view-pieces" class="view">
+  <section>
+    <span class="eyebrow">Catalogue</span>
+    <h1>Pièces détachées</h1>
+    <input type="text" class="search" id="pSearch" placeholder="Rechercher..." oninput="renderPieces()">
+    <div class="chips" id="pChips"></div>
+    <div id="piecesList"></div>
+  </section>
+</main>
+
+<!-- VUE : CONTACT -->
+<main id="view-contact" class="view">
+  <section>
+    <span class="eyebrow">Contact</span>
+    <h1>Parlons de votre projet</h1>
+    <p class="sub">Réponse sous 24h.</p>
+    <form onsubmit="submitContact(event)">
+      <div class="field"><label>Nom</label><input name="cName" id="cName" maxlength="120" autocomplete="name" required></div>
+      <div class="field"><label>Email</label><input type="email" name="cEmail" id="cEmail" maxlength="200" autocomplete="email" required></div>
+      <div class="field"><label>Téléphone</label><input type="tel" name="cPhone" id="cPhone" maxlength="40" autocomplete="tel" required placeholder="+225..."></div>
+      <div class="field"><label>Message</label><textarea name="cMsg" id="cMsg" maxlength="4000" required></textarea></div>
+      <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
+      <button class="btn btn-primary btn-block" type="submit">Envoyer</button>
+    </form>
+  </section>
+</main>
+
+<!-- VUE : ADMIN -->
+<main id="view-admin" class="view">
+  <div class="admin">
+    <div id="adminGate" class="admin-gate">
+      <div style="font-size:36px;margin-bottom:12px">🔒</div>
+      <h2>Administration</h2>
+      <p style="font-size:13px;color:var(--ink-soft);margin-bottom:16px">Connectez-vous pour gérer le site.</p>
+      <input type="email" id="adminEmail" placeholder="Email administrateur" autocomplete="username">
+      <input type="password" id="adminCode" placeholder="Code / mot de passe" autocomplete="current-password">
+      <p id="adminErr" style="color:#e5484d;font-size:12px;margin-bottom:8px;display:none">Identifiants incorrects.</p>
+      <button class="btn btn-primary btn-block" onclick="adminLogin()">Connexion</button>
+    </div>
+    <div id="adminPanel" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h1 style="font-size:1.8rem">Admin</h1>
+        <button class="btn btn-outline" style="padding:8px 14px;font-size:12px" onclick="adminLogout()">Déconnexion</button>
+      </div>
+      <div class="admin-tab">
+        <button class="on" onclick="admTab('forfaits',this)">Forfaits</button>
+        <button onclick="admTab('location',this)">Location</button>
+        <button onclick="admTab('vente',this)">Vente</button>
+        <button onclick="admTab('pieces',this)">Pièces</button>
+        <button onclick="admTab('slides',this)">Slides Accueil</button>
+        <button onclick="admTab('scImages',this)">Images SpeedConnect</button>
+        <button onclick="admTab('messages',this)">Messages</button>
+      </div>
+      <div id="admContent"></div>
+    </div>
+  </div>
+</main>
+
+<div class="sticky-cta" id="stickyCta">
+  <a href="tel:+2250700000000" class="btn btn-outline">📞 Appeler</a>
+  <button class="btn btn-primary" onclick="go('contact')">Demander un devis</button>
+</div>
+
+<!-- MODALE CGV -->
+<div id="cgvModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;padding:16px;overflow-y:auto" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:16px;padding:24px;max-width:600px;margin:20px auto">
+    <h2 style="margin-bottom:16px">CGV Speed Dépannage</h2>
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">Les présentes CGV régissent les relations entre Speed Dépannage et tout client souscrivant à un forfait ou option.</p>
+    <h3 style="font-size:1.1rem;margin:16px 0 8px">Durée</h3><p style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">12 mois, reconduction tacite. Dénonciation 3 mois avant échéance.</p>
+    <h3 style="font-size:1.1rem;margin:16px 0 8px">Prix</h3><p style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">FCFA HT, TVA 18%. Retard : intérêts + indemnité 66 000 FCFA.</p>
+    <button class="btn btn-navy btn-block" style="margin-top:16px" onclick="document.getElementById('cgvModal').style.display='none'">Fermer</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  © 2026 Speed Dépannage · Abidjan, Côte d'Ivoire<br>
+  <a href="https://savprorci.github.io/SpeedConnect" target="_blank">Accéder à Speed Connect</a>
+</footer>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+// ==========================================
+// CONFIGURATION SUPABASE (valeurs dans config.js)
+// ==========================================
+const CFG = window.SD_CONFIG || {};
+const SUPABASE_READY = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY &&
+  !/VOTRE/.test(CFG.SUPABASE_URL + CFG.SUPABASE_ANON_KEY));
+const BUCKET = 'sd-images';
+let supabaseClient = null;
+try {
+  if (SUPABASE_READY && window.supabase) {
+    supabaseClient = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  }
+} catch (e) { console.warn('Supabase non initialisé :', e); }
+
+// Mode test local : code court, SANS Supabase, uniquement sur localhost / fichier ouvert directement.
+// Le code vient de config.local.js (ignoré par git). Jamais actif sur le site publié.
+const TEST_HOST = ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname);
+const LOCAL_TEST = !supabaseClient && TEST_HOST && !!CFG.TEST_CODE;
+const LS_DATA = 'sd_test_data', LS_MSG = 'sd_test_contacts';
+function lsGet(k, d){ try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e) { return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e) { return false; } }
+
+let currentTab = 'forfaits';
+
+// ==========================================
+// DONNÉES PAR DÉFAUT
+// ==========================================
+const DEFAULT_DATA = {
+  slides: [
+    { id:'s1', title:'L\'énergie qui ne s\'arrête jamais.', text:'Location, vente, coffrets sur mesure, maintenance et supervision à distance.', image:'' },
+    { id:'s2', title:'Intervention < 1h à Abidjan.', text:'Une panne ? Nos équipes interviennent en urgence 24h/24.', image:'' },
+    { id:'s3', title:'Tarifs dégressifs.', text:'Groupes électrogènes et engins TP. Maintenance incluse.', image:'' },
+    { id:'s4', title:'Speed Connect.', text:'Pilotez vos équipements en temps réel depuis votre smartphone.', image:'' }
+  ],
+  scImages: [
+    { id:'sc1', image:'' },
+    { id:'sc2', image:'' }
+  ],
+  forfaits: [
+    {id:'essentiel',name:'Essentiel',price:'35 000 FCFA/trimestre',target:'Résidences, boutiques',visites:'1/trimestre',delai:'24h',image:''},
+    {id:'serenite',name:'Sérénité',price:'62 000 FCFA/trimestre',target:'Pharmacies, supermarchés',visites:'1/mois',delai:'12h',image:''},
+    {id:'preventif',name:'Préventif Pro',price:'125 000 FCFA/trimestre',target:'Supermarchés, PME',visites:'1/mois',delai:'8h ouvrées',image:''},
+    {id:'haute',name:'Haute Dispo',price:'170 000 FCFA/trimestre',target:'Forte fréquentation',visites:'2/mois',delai:'6h',image:''},
+    {id:'indus',name:'Industriel Std',price:'350 000 FCFA/mois',target:'Usines, hôpitaux',visites:'2/mois',delai:'4h ouvrées',image:''},
+    {id:'critique',name:'Industriel Critique',price:'890 000 FCFA/trimestre',target:'Data centers',visites:'2/mois',delai:'2h',image:''}
+  ],
+  location: [
+    {id:'l1',name:'GE Perkins 50 kVA',type:'Groupe électrogène',kva:50,price:'À partir de 50 000 FCFA/sem',image:''},
+    {id:'l2',name:'GE Caterpillar 100 kVA',type:'Groupe électrogène',kva:100,price:'À partir de 100 000 FCFA/sem',image:''},
+    {id:'l3',name:'Mini-pelle 1.7T',type:'Engin TP',kva:0,price:'À partir de 85 000 FCFA/jour',image:''}
+  ],
+  pieces: [
+    {id:'p1',name:'Filtre à huile Perkins',cat:'Filtration',price:'15 000 FCFA',image:''},
+    {id:'p2',name:'Huile 15W40 (20L)',cat:'Lubrifiants',price:'65 000 FCFA',image:''},
+    {id:'p3',name:'Batterie 12V 100Ah',cat:'Électrique',price:'80 000 FCFA',image:''}
+  ],
+  vente: [
+    {id:'v1',name:'GE Perkins 20 kVA',cat:'Groupe',price:'Sur devis',image:''},
+    {id:'v2',name:'Motopompe incendie',cat:'Motopompe',price:'Sur devis',image:''}
+  ]
+};
+
+// Données affichées : valeurs par défaut, remplacées par celles de Supabase dès qu'elles sont chargées
+let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
+let isAdmin = false;
+
+async function loadRemoteData() {
+  if (!supabaseClient) return;
+  const { data, error } = await supabaseClient
+    .from('sd_items').select('collection,id,position,data').order('position', { ascending: true });
+  if (error) { console.warn('Chargement Supabase impossible :', error.message); return; }
+  if (!data || !data.length) return; // base vide : on garde les valeurs par défaut
+  const groups = {};
+  data.forEach(r => { (groups[r.collection] = groups[r.collection] || []).push({ id: r.id, ...r.data }); });
+  Object.keys(DEFAULT_DATA).forEach(k => { DATA[k] = groups[k] || []; });
+  refreshView();
+}
+
+// Échappement HTML pour les valeurs injectées dans le DOM
+function esc(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ==========================================
+// SLIDER DYNAMIQUE
+// ==========================================
+let currentSlide = 0;
+
+function renderSlider() {
+  const container = document.getElementById('sliderSlides');
+  const dotsContainer = document.getElementById('sliderDots');
+  if (!container || !dotsContainer) return;
+
+  container.innerHTML = DATA.slides.map((s, i) => {
+    const bg = s.image ? `background-image:url('${esc(s.image)}');` : `background:linear-gradient(150deg,#081a33,#0f2a52);`;
+    return `
+      <div class="slide ${i===0?'active':''}" style="${bg}">
+        <div class="slide-overlay"></div>
+        <div class="slide-content">
+          <span class="eyebrow" style="color:#f7c948">Speed Dépannage</span>
+          <h1>${esc(s.title)}</h1>
+          <p>${esc(s.text)}</p>
+          <button class="btn btn-primary" onclick="go('contact')">Demander un devis</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  dotsContainer.innerHTML = DATA.slides.map((_, i) =>
+    `<span class="dot ${i===0?'active':''}" onclick="setSlide(${i})"></span>`
+  ).join('');
+
+  currentSlide = 0;
+}
+
+function setSlide(n) {
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.dot');
+  if(!slides.length) return;
+  if(slides[currentSlide]) slides[currentSlide].classList.remove('active');
+  if(dots[currentSlide]) dots[currentSlide].classList.remove('active');
+  currentSlide = n;
+  slides[currentSlide].classList.add('active');
+  if(dots[currentSlide]) dots[currentSlide].classList.add('active');
+}
+
+setInterval(() => {
+  const slides = document.querySelectorAll('.slide');
+  if(slides.length > 1) setSlide((currentSlide + 1) % slides.length);
+}, 5000);
+
+// ==========================================
+// IMAGES SPEED CONNECT
+// ==========================================
+function renderSpeedConnectImages() {
+  const container = document.getElementById('scImagesContainer');
+  if(!container) return;
+  container.innerHTML = DATA.scImages.map(img => {
+    const src = esc(img.image) || 'https://placehold.co/600x350/16304f/ff7a1a?text=Image+Speed+Connect';
+    return `<img src="${src}" alt="Aperçu Speed Connect" class="sc-img">`;
+  }).join('');
+}
+
+// ==========================================
+// NAVIGATION
+// ==========================================
+function renderView(view){
+  if(view==='accueil') { renderSlider(); renderSpeedConnectImages(); }
+  if(view==='location') renderLocation();
+  if(view==='pieces') renderPieces();
+  if(view==='vente') renderVente();
+  if(view==='maintenance') renderForfaits();
+  if(view==='admin') checkAdmin();
+}
+
+// Re-rend la vue courante après chargement des données (sauf l'admin, pour ne pas perdre une saisie)
+function refreshView(){
+  const v = document.querySelector('.view.active');
+  const name = v ? v.id.replace('view-','') : '';
+  if(name && name !== 'admin') renderView(name);
+}
+
+// Accès caché à l'administration : 7 clics rapprochés sur le logo
+let logoClicks = 0, logoTimer;
+function logoClick(){
+  logoClicks++;
+  clearTimeout(logoTimer);
+  logoTimer = setTimeout(() => { logoClicks = 0; }, 2500); // les clics doivent se suivre à moins de 2,5 s
+  if(logoClicks >= 7){
+    logoClicks = 0;
+    go('admin');
+    return;
+  }
+  go('accueil');
+}
+
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const el = document.getElementById('view-'+view);
+  if(el) el.classList.add('active');
+  document.getElementById('menu').classList.remove('open');
+  window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('stickyCta').style.display = (view==='admin')?'none':'flex';
+  renderView(view);
+}
+
+// ==========================================
+// RENDU DES CARTES (Avec images locales)
+// ==========================================
+function renderLocation(){
+  const el = document.getElementById('locCards'); if(!el) return;
+  el.innerHTML = DATA.location.map(l=>`
+    <div class="card">
+      ${l.image ? `<img src="${esc(l.image)}" class="article-img" alt="${esc(l.name)}">` : `<div class="article-img" style="display:grid;place-items:center;color:#8b98b3;">Aucune image</div>`}
+      <span class="card-tag">${esc(l.type)} · ${esc(l.kva)} kVA</span>
+      <h3>${esc(l.name)}</h3>
+      <div class="card-price">${esc(l.price)}</div>
+      <button class="btn btn-primary btn-block" onclick="go('contact')">Réserver</button>
+    </div>`).join('');
+}
+
+function renderVente(){
+  const el = document.getElementById('venteCards'); if(!el) return;
+  el.innerHTML = DATA.vente.map(v=>`
+    <div class="card">
+      ${v.image ? `<img src="${esc(v.image)}" class="article-img" alt="${esc(v.name)}">` : `<div class="article-img" style="display:grid;place-items:center;color:#8b98b3;">Aucune image</div>`}
+      <span class="card-tag">${esc(v.cat)}</span>
+      <h3>${esc(v.name)}</h3>
+      <div class="card-price">${esc(v.price)}</div>
+      <button class="btn btn-navy btn-block" onclick="go('contact')">Devis</button>
+    </div>`).join('');
+}
+
+function renderForfaits(){
+  const el = document.getElementById('forfaitsList'); if(!el) return;
+  el.innerHTML = DATA.forfaits.map(f=>`
+    <div class="accordion" onclick="this.classList.toggle('open')">
+      <div class="accordion-head"><b>${esc(f.name)}</b><span>${esc(f.price)}</span></div>
+      <div class="accordion-body">
+        <p><strong>Cible :</strong> ${esc(f.target)}</p>
+        <p><strong>Visites :</strong> ${esc(f.visites)}</p>
+        <p><strong>Délai :</strong> ${esc(f.delai)}</p>
+      </div>
+    </div>`).join('');
+}
+
+function renderPieces(){
+  const list = document.getElementById('piecesList'); if(!list) return;
+  const chips = document.getElementById('pChips');
+  const cats = ['Tout', ...new Set(DATA.pieces.map(p=>p.cat))];
+  window._pieceCats = cats;
+  let active = window._pieceCat || 'Tout';
+  if(!cats.includes(active)) active = window._pieceCat = 'Tout';
+  if(chips) chips.innerHTML = cats.map((c,i)=>`<button class="chip ${c===active?'active':''}" onclick="window._pieceCat=window._pieceCats[${i}];renderPieces()">${esc(c)}</button>`).join('');
+  const search = (document.getElementById('pSearch')?.value||'').toLowerCase();
+  let items = DATA.pieces;
+  if(active!=='Tout') items = items.filter(p=>p.cat===active);
+  if(search) items = items.filter(p=>p.name.toLowerCase().includes(search));
+  list.innerHTML = items.length ? items.map(p=>`
+    <div class="card">
+      ${p.image ? `<img src="${esc(p.image)}" class="article-img" alt="${esc(p.name)}">` : `<div class="article-img" style="display:grid;place-items:center;color:#8b98b3;">Aucune image</div>`}
+      <span class="card-tag">${esc(p.cat)}</span>
+      <h3>${esc(p.name)}</h3>
+      <div class="card-price">${esc(p.price)}</div>
+      <button class="btn btn-primary btn-block" onclick="go('contact')">Commander</button>
+    </div>`).join('') : '<p style="text-align:center;padding:20px;color:var(--ink-soft)">Aucun résultat</p>';
+}
+
+// ==========================================
+// SIMULATEUR
+// ==========================================
+function calcRate(w){
+  if(w===1)return 1; if(w===2)return .8; if(w===3)return .6; if(w===4)return .5;
+  return Math.max(.3, .5-(w-4)*.05);
+}
+
+function updateSim(){
+  const kva = +document.getElementById('simKva').value || 50;
+  const weeks = Math.max(1, +document.getElementById('simWeeks').value || 1);
+  let total = 0;
+  for(let w=1; w<=weeks; w++) total += kva*1000*calcRate(w);
+  document.getElementById('simTotal').textContent = Math.round(total).toLocaleString('fr-FR') + ' FCFA';
+}
+
+// ==========================================
+// ADMIN (Supabase Auth) & UPLOAD D'IMAGES (Supabase Storage)
+// ==========================================
+function showAdminErr(msg){
+  const err = document.getElementById('adminErr');
+  err.textContent = msg; err.style.display = 'block';
+}
+
+async function checkIsAdmin(){
+  if(!supabaseClient) return false;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session) return false;
+    const { data, error } = await supabaseClient
+      .from('sd_admins').select('user_id').eq('user_id', session.user.id).maybeSingle();
+    return !error && !!data;
+  } catch(e) { return false; }
+}
+
+async function adminLogin(){
+  if(LOCAL_TEST){
+    if(document.getElementById('adminCode').value !== String(CFG.TEST_CODE)){ showAdminErr('Code incorrect.'); return; }
+    isAdmin = true;
+    document.getElementById('adminErr').style.display = 'none';
+    document.getElementById('adminCode').value = '';
+    toast('Bienvenue Admin (mode test)', 'ok');
+    checkAdmin();
+    return;
+  }
+  if(!supabaseClient){ showAdminErr('Supabase non configuré (voir config.js).'); return; }
+  const email = (CFG.ADMIN_EMAIL || document.getElementById('adminEmail').value).trim();
+  const password = document.getElementById('adminCode').value;
+  if(!email || !password){ showAdminErr('Saisissez le code / mot de passe.'); return; }
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){
+    const m = (error.message || '').toLowerCase();
+    if(m.includes('not confirmed')) showAdminErr('Compte non confirmé : dans Supabase, confirmez l\'utilisateur (Auto Confirm).');
+    else if(m.includes('invalid login')) showAdminErr('Email ou mot de passe incorrect.');
+    else showAdminErr('Connexion impossible : ' + error.message);
+    return;
+  }
+  isAdmin = await checkIsAdmin();
+  if(!isAdmin){
+    await supabaseClient.auth.signOut();
+    showAdminErr("Ce compte n'a pas les droits administrateur.");
+    return;
+  }
+  document.getElementById('adminErr').style.display = 'none';
+  document.getElementById('adminCode').value = '';
+  toast('Bienvenue Admin', 'ok');
+  checkAdmin();
+}
+
+async function adminLogout(){
+  if(supabaseClient) await supabaseClient.auth.signOut();
+  isAdmin = false;
+  checkAdmin();
+}
+
+function checkAdmin(){
+  const gate = document.getElementById('adminGate');
+  const panel = document.getElementById('adminPanel');
+  if(isAdmin){
+    gate.style.display='none'; panel.style.display='block';
+    document.querySelectorAll('.admin-tab button').forEach(b=>b.classList.toggle('on', b.getAttribute('onclick').includes("'"+currentTab+"'")));
+    renderAdmin(currentTab);
+  }
+  else { gate.style.display='block'; panel.style.display='none'; }
+}
+
+function admTab(t, btn){
+  currentTab = t;
+  document.querySelectorAll('.admin-tab button').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  renderAdmin(t);
+}
+
+// ---- Écriture en base (réservée aux admins par les règles RLS) ----
+async function dbUpsert(t, i){
+  if(LOCAL_TEST){
+    if(lsSet(LS_DATA, DATA)) return true;
+    toast('Stockage du navigateur plein : réduisez les images.', 'err');
+    return false;
+  }
+  const { id, ...rest } = DATA[t][i];
+  const { error } = await supabaseClient.from('sd_items')
+    .upsert({ collection: t, id, position: i, data: rest }, { onConflict: 'collection,id' });
+  if(error){ toast('Erreur de sauvegarde : ' + error.message, 'err'); return false; }
+  return true;
+}
+
+async function setField(t, i, key, val){
+  const previous = DATA[t][i][key];
+  DATA[t][i][key] = val;
+  if(await dbUpsert(t, i)) toast('Enregistré', 'ok');
+  else DATA[t][i][key] = previous;
+}
+
+const NEW_ITEM = {
+  forfaits: () => ({ name:'Nouveau forfait', price:'', target:'', visites:'', delai:'', image:'' }),
+  location: () => ({ name:'Nouvel équipement', type:'Groupe électrogène', kva:0, price:'', image:'' }),
+  pieces:   () => ({ name:'Nouvelle pièce', cat:'', price:'', image:'' }),
+  vente:    () => ({ name:'Nouvel article', cat:'', price:'Sur devis', image:'' }),
+  slides:   () => ({ title:'Nouveau slide', text:'', image:'' }),
+  scImages: () => ({ image:'' })
+};
+const ADD_LABEL = { forfaits:'forfait', location:'équipement', pieces:'pièce', vente:'article', slides:'slide', scImages:'image' };
+
+async function addItem(t){
+  const make = NEW_ITEM[t]; if(!make) return;
+  DATA[t].push({ id: t.slice(0,3) + '_' + Date.now().toString(36), ...make() });
+  if(!(await dbUpsert(t, DATA[t].length - 1))){ DATA[t].pop(); return; }
+  renderAdmin(t);
+  toast('Élément ajouté', 'ok');
+  const cards = document.querySelectorAll('#admContent .admin-edit');
+  if(cards.length) cards[cards.length - 1].scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+async function dupItem(t, i){
+  const copy = JSON.parse(JSON.stringify(DATA[t][i]));
+  copy.id = t.slice(0,3) + '_' + Date.now().toString(36);
+  if(copy.name) copy.name += ' (copie)';
+  if(copy.title) copy.title += ' (copie)';
+  DATA[t].push(copy);
+  if(!(await dbUpsert(t, DATA[t].length - 1))){ DATA[t].pop(); return; }
+  renderAdmin(t);
+  toast('Élément dupliqué', 'ok');
+}
+
+async function moveItem(t, i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= DATA[t].length) return;
+  [DATA[t][i], DATA[t][j]] = [DATA[t][j], DATA[t][i]];
+  const ok1 = await dbUpsert(t, i), ok2 = await dbUpsert(t, j);
+  if(!ok1 || !ok2){ [DATA[t][i], DATA[t][j]] = [DATA[t][j], DATA[t][i]]; }
+  renderAdmin(t);
+}
+
+async function delItem(t, i){
+  if(!confirm('Supprimer cet élément définitivement ?')) return;
+  if(!LOCAL_TEST){
+    const { error } = await supabaseClient.from('sd_items').delete().eq('collection', t).eq('id', DATA[t][i].id);
+    if(error){ toast('Suppression impossible : ' + error.message, 'err'); return; }
+  }
+  DATA[t].splice(i, 1);
+  if(LOCAL_TEST) lsSet(LS_DATA, DATA);
+  renderAdmin(t);
+}
+
+// ---- Images : redimensionnement local puis envoi dans Supabase Storage ----
+function resizeToJpeg(file, max){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * ratio);
+      c.height = Math.round(img.height * ratio);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Conversion impossible')); }, 'image/jpeg', 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
+    img.src = url;
+  });
+}
+
+async function handleImageUpload(event, t, i){
+  const file = event.target.files[0];
+  if(!file) return;
+  try {
+    toast('Envoi de l\'image…');
+    let url;
+    if(LOCAL_TEST){
+      const small = await resizeToJpeg(file, 800);
+      url = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej(new Error('Lecture impossible'));
+        r.readAsDataURL(small);
+      });
+    } else {
+      const blob = await resizeToJpeg(file, 1200);
+      const path = `${t}/${DATA[t][i].id}-${Date.now()}.jpg`;
+      const { error } = await supabaseClient.storage.from(BUCKET)
+        .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000' });
+      if(error) throw error;
+      url = supabaseClient.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    }
+    const previous = DATA[t][i].image;
+    DATA[t][i].image = url;
+    if(await dbUpsert(t, i)){ renderAdmin(t); toast('Image mise en ligne', 'ok'); }
+    else DATA[t][i].image = previous;
+  } catch(e) {
+    toast('Échec de l\'envoi : ' + (e.message || e), 'err');
+  }
+}
+
+// ---- Messages reçus via le formulaire de contact ----
+async function renderMessages(){
+  const el = document.getElementById('admContent'); if(!el) return;
+  el.innerHTML = '<p style="padding:12px">Chargement…</p>';
+  let data, error = null;
+  if(LOCAL_TEST) data = lsGet(LS_MSG, []);
+  else ({ data, error } = await supabaseClient.from('sd_contacts')
+    .select('*').order('created_at', { ascending: false }).limit(100));
+  if(error){ el.innerHTML = `<p style="color:#e5484d;padding:12px">${esc(error.message)}</p>`; return; }
+  el.innerHTML = data.length ? data.map(m => `
+    <div class="admin-edit">
+      <label>${esc(new Date(m.created_at).toLocaleString('fr-FR'))}</label>
+      <b>${esc(m.name)}</b> ·
+      <a href="mailto:${esc(m.email)}" style="color:var(--red)">${esc(m.email)}</a> ·
+      <a href="tel:${esc(m.phone)}" style="color:var(--red)">${esc(m.phone)}</a>
+      <p style="font-size:13px;margin-top:8px;white-space:pre-wrap">${esc(m.message)}</p>
+      <button class="admin-del" onclick="delMessage('${esc(m.id)}')">Supprimer</button>
+    </div>`).join('') : '<p style="padding:12px">Aucun message.</p>';
+}
+
+async function delMessage(id){
+  if(!confirm('Supprimer ce message ?')) return;
+  if(LOCAL_TEST){ lsSet(LS_MSG, lsGet(LS_MSG, []).filter(m => m.id !== id)); renderMessages(); return; }
+  const { error } = await supabaseClient.from('sd_contacts').delete().eq('id', id);
+  if(error){ toast('Suppression impossible : ' + error.message, 'err'); return; }
+  renderMessages();
+}
+
+// ---- Rendu de l'éditeur ----
+function renderAdmin(t){
+  const el = document.getElementById('admContent'); if(!el) return;
+  if(t === 'messages'){ renderMessages(); return; }
+  const items = DATA[t] || [];
+
+  const addBtn = (extra='') => `<button class="btn btn-primary" style="min-height:40px;padding:8px 14px;${extra}" onclick="addItem('${t}')">+ Ajouter ${ADD_LABEL[t]||''}</button>`;
+  el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><b>${items.length} élément${items.length>1?'s':''}</b>${addBtn()}</div>
+    <p style="font-size:12px;color:var(--ink-soft);margin-bottom:12px">${LOCAL_TEST ? '🧪 Mode test local : les modifications sont enregistrées dans ce navigateur uniquement (pas de Supabase).' : 'Il n\'y a pas de limite au nombre d\'éléments. Les modifications sont enregistrées automatiquement et visibles par tous les visiteurs.'}</p>` +
+  items.map((it,i)=>{
+    const nameKey = ('name' in it) ? 'name' : 'title';
+    return `
+    <div class="admin-edit">
+      ${t !== 'scImages' ? `
+        <label>Nom / Titre</label>
+        <input value="${esc(it[nameKey])}" onchange="setField('${t}',${i},'${nameKey}',this.value)">
+      ` : `<label>Image ${i+1}</label>`}
+
+      ${t === 'forfaits' ? `
+        <label>Prix</label><input value="${esc(it.price)}" onchange="setField('${t}',${i},'price',this.value)">
+        <label>Cible</label><input value="${esc(it.target)}" onchange="setField('${t}',${i},'target',this.value)">
+        <label>Visites</label><input value="${esc(it.visites)}" onchange="setField('${t}',${i},'visites',this.value)">
+        <label>Délai d'intervention</label><input value="${esc(it.delai)}" onchange="setField('${t}',${i},'delai',this.value)">
+      ` : ''}
+
+      ${t === 'location' ? `
+        <label>Type</label><input value="${esc(it.type)}" onchange="setField('${t}',${i},'type',this.value)">
+        <label>kVA</label><input type="number" value="${esc(it.kva)}" onchange="setField('${t}',${i},'kva',+this.value)">
+        <label>Prix</label><input value="${esc(it.price)}" onchange="setField('${t}',${i},'price',this.value)">
+      ` : ''}
+
+      ${t === 'pieces' || t === 'vente' ? `
+        <label>Catégorie</label><input value="${esc(it.cat)}" onchange="setField('${t}',${i},'cat',this.value)">
+        <label>Prix</label><input value="${esc(it.price)}" onchange="setField('${t}',${i},'price',this.value)">
+      ` : ''}
+
+      ${t === 'slides' ? `
+        <label>Texte</label><input value="${esc(it.text)}" onchange="setField('${t}',${i},'text',this.value)">
+      ` : ''}
+
+      <label style="color:var(--red)">Image (envoi vers Supabase Storage)</label>
+      <input type="file" accept="image/*" onchange="handleImageUpload(event,'${t}',${i})">
+
+      ${it.image ? `<div style="margin:10px 0;"><img src="${esc(it.image)}" alt="" style="height:80px;border-radius:6px;"></div>` : ''}
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-outline" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="moveItem('${t}',${i},-1)" ${i===0?'disabled':''}>↑ Monter</button>
+        <button class="btn btn-outline" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="moveItem('${t}',${i},1)" ${i===items.length-1?'disabled':''}>↓ Descendre</button>
+        <button class="btn btn-outline" style="min-height:36px;padding:6px 12px;font-size:12px" onclick="dupItem('${t}',${i})">⧉ Dupliquer</button>
+        <button class="admin-del" style="margin-top:0" onclick="delItem('${t}',${i})">Supprimer</button>
+      </div>
+    </div>`;
+  }).join('') +
+  (NEW_ITEM[t] ? addBtn('width:100%;margin-top:8px') : '');
+}
+
+// ==========================================
+// UTILS
+// ==========================================
+let toastTimer;
+function toast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.className='toast', 3000);
+}
+async function submitContact(e){
+  e.preventDefault();
+  const f = e.target;
+  if(f.website && f.website.value){ f.reset(); toast('Demande envoyée !','ok'); return; } // anti-spam (champ piège)
+  if(LOCAL_TEST){
+    const msgs = lsGet(LS_MSG, []);
+    msgs.unshift({ id:String(Date.now()), name:f.cName.value.trim(), email:f.cEmail.value.trim(), phone:f.cPhone.value.trim(), message:f.cMsg.value.trim(), created_at:new Date().toISOString() });
+    lsSet(LS_MSG, msgs);
+    toast('Demande enregistrée (mode test local)','ok');
+    f.reset();
+    return;
+  }
+  if(!supabaseClient){ toast('Service indisponible. Appelez-nous directement.','err'); return; }
+  const btn = f.querySelector('button[type=submit]');
+  const row = { name:f.cName.value.trim(), email:f.cEmail.value.trim(), phone:f.cPhone.value.trim(), message:f.cMsg.value.trim() };
+  btn.disabled = true;
+  const { error } = await supabaseClient.from('sd_contacts').insert(row);
+  btn.disabled = false;
+  if(error){ toast('Envoi impossible. Réessayez ou appelez-nous.','err'); return; }
+  toast('Demande envoyée !','ok');
+  f.reset();
+}
+
+function coffretToContact(){
+  const v = id => document.getElementById(id).value.trim();
+  document.getElementById('cMsg').value =
+    `Demande de coffret sur mesure\n- Type : ${v('cfType')}\n- Indice IP : ${v('cfIp')}\n- Nombre de départs : ${v('cfDeparts')}\n- Calibre : ${v('cfCalibre') || 'à définir'}\n- Besoins : ${v('cfBesoins') || '—'}`;
+  go('contact');
+  toast('Complétez vos coordonnées puis envoyez.');
+}
+function showCGV(){ document.getElementById('cgvModal').style.display = 'block'; }
+
+// DÉMARRAGE
+document.addEventListener('DOMContentLoaded', async ()=>{
+  if(LOCAL_TEST){
+    const saved = lsGet(LS_DATA, null);
+    if(saved) Object.keys(DEFAULT_DATA).forEach(k => { if(Array.isArray(saved[k])) DATA[k] = saved[k]; });
+  }
+  renderSlider();
+  renderSpeedConnectImages();
+  document.getElementById('simKva')?.addEventListener('change', updateSim);
+  document.getElementById('simWeeks')?.addEventListener('input', updateSim);
+  if(CFG.ADMIN_EMAIL || LOCAL_TEST){ const em = document.getElementById('adminEmail'); if(em) em.style.display = 'none'; }
+  document.getElementById('adminCode')?.addEventListener('keydown', e=>{ if(e.key==='Enter') adminLogin(); });
+  updateSim();
+  if(supabaseClient){
+    await loadRemoteData();
+    isAdmin = await checkIsAdmin(); // session restaurée par Supabase
+  }
+});
+</script>
+</body>
+</html>
