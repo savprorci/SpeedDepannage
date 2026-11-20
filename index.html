@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script src="config.js"></script>
-<script src="config.local.js"></script><!-- optionnel : tests locaux, non versionné -->
 <style>
 :root{--navy:#0f2a52;--navy2:#1a427a;--red:#e63946;--gold:#c98a00;--bg:#fff;--bg-soft:#f5f7fb;--line:#dbe3ee;--ink:#0f2a52;--ink-soft:#52627d}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -314,19 +313,10 @@ footer a{color:#f7c948;display:inline-block;margin-top:8px}
 <!-- VUE : ADMIN -->
 <main id="view-admin" class="view">
   <div class="admin">
-    <div id="adminGate" class="admin-gate">
-      <div style="font-size:36px;margin-bottom:12px">🔒</div>
-      <h2>Administration</h2>
-      <p style="font-size:13px;color:var(--ink-soft);margin-bottom:16px">Connectez-vous pour gérer le site.</p>
-      <input type="email" id="adminEmail" placeholder="Email administrateur" autocomplete="username">
-      <input type="password" id="adminCode" placeholder="Code / mot de passe" autocomplete="current-password">
-      <p id="adminErr" style="color:#e5484d;font-size:12px;margin-bottom:8px;display:none">Identifiants incorrects.</p>
-      <button class="btn btn-primary btn-block" onclick="adminLogin()">Connexion</button>
-    </div>
-    <div id="adminPanel" style="display:none">
+    <div id="adminPanel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h1 style="font-size:1.8rem">Admin</h1>
-        <button class="btn btn-outline" style="padding:8px 14px;font-size:12px" onclick="adminLogout()">Déconnexion</button>
+        <button class="btn btn-outline" style="padding:8px 14px;font-size:12px" onclick="go('accueil')">Quitter</button>
       </div>
       <div class="admin-tab">
         <button class="on" onclick="admTab('forfaits',this)">Forfaits</button>
@@ -335,7 +325,6 @@ footer a{color:#f7c948;display:inline-block;margin-top:8px}
         <button onclick="admTab('pieces',this)">Pièces</button>
         <button onclick="admTab('slides',this)">Slides Accueil</button>
         <button onclick="admTab('scImages',this)">Images SpeedConnect</button>
-        <button onclick="admTab('messages',this)">Messages</button>
       </div>
       <div id="admContent"></div>
     </div>
@@ -381,11 +370,9 @@ try {
   }
 } catch (e) { console.warn('Supabase non initialisé :', e); }
 
-// Mode test local : code court, SANS Supabase, uniquement sur localhost / fichier ouvert directement.
-// Le code vient de config.local.js (ignoré par git). Jamais actif sur le site publié.
-const TEST_HOST = ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname);
-const LOCAL_TEST = !supabaseClient && TEST_HOST && !!CFG.TEST_CODE;
-const LS_DATA = 'sd_test_data', LS_MSG = 'sd_test_contacts';
+// Sans Supabase configuré (config.js), les modifications sont enregistrées dans ce navigateur uniquement.
+const LOCAL_MODE = !supabaseClient;
+const LS_DATA = 'sd_local_data';
 function lsGet(k, d){ try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch(e) { return d; } }
 function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e) { return false; } }
 
@@ -431,7 +418,6 @@ const DEFAULT_DATA = {
 
 // Données affichées : valeurs par défaut, remplacées par celles de Supabase dès qu'elles sont chargées
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
-let isAdmin = false;
 
 async function loadRemoteData() {
   if (!supabaseClient) return;
@@ -633,71 +619,11 @@ function updateSim(){
 // ==========================================
 // ADMIN (Supabase Auth) & UPLOAD D'IMAGES (Supabase Storage)
 // ==========================================
-function showAdminErr(msg){
-  const err = document.getElementById('adminErr');
-  err.textContent = msg; err.style.display = 'block';
-}
-
-async function checkIsAdmin(){
-  if(!supabaseClient) return false;
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if(!session) return false;
-    const { data, error } = await supabaseClient
-      .from('sd_admins').select('user_id').eq('user_id', session.user.id).maybeSingle();
-    return !error && !!data;
-  } catch(e) { return false; }
-}
-
-async function adminLogin(){
-  if(LOCAL_TEST){
-    if(document.getElementById('adminCode').value !== String(CFG.TEST_CODE)){ showAdminErr('Code incorrect.'); return; }
-    isAdmin = true;
-    document.getElementById('adminErr').style.display = 'none';
-    document.getElementById('adminCode').value = '';
-    toast('Bienvenue Admin (mode test)', 'ok');
-    checkAdmin();
-    return;
-  }
-  if(!supabaseClient){ showAdminErr('Supabase non configuré (voir config.js).'); return; }
-  const email = (CFG.ADMIN_EMAIL || document.getElementById('adminEmail').value).trim();
-  const password = document.getElementById('adminCode').value;
-  if(!email || !password){ showAdminErr('Saisissez le code / mot de passe.'); return; }
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if(error){
-    const m = (error.message || '').toLowerCase();
-    if(m.includes('not confirmed')) showAdminErr('Compte non confirmé : dans Supabase, confirmez l\'utilisateur (Auto Confirm).');
-    else if(m.includes('invalid login')) showAdminErr('Email ou mot de passe incorrect.');
-    else showAdminErr('Connexion impossible : ' + error.message);
-    return;
-  }
-  isAdmin = await checkIsAdmin();
-  if(!isAdmin){
-    await supabaseClient.auth.signOut();
-    showAdminErr("Ce compte n'a pas les droits administrateur.");
-    return;
-  }
-  document.getElementById('adminErr').style.display = 'none';
-  document.getElementById('adminCode').value = '';
-  toast('Bienvenue Admin', 'ok');
-  checkAdmin();
-}
-
-async function adminLogout(){
-  if(supabaseClient) await supabaseClient.auth.signOut();
-  isAdmin = false;
-  checkAdmin();
-}
-
+// Accès admin : uniquement via 7 clics sur le logo (voir logoClick), aucune identification
 function checkAdmin(){
-  const gate = document.getElementById('adminGate');
-  const panel = document.getElementById('adminPanel');
-  if(isAdmin){
-    gate.style.display='none'; panel.style.display='block';
-    document.querySelectorAll('.admin-tab button').forEach(b=>b.classList.toggle('on', b.getAttribute('onclick').includes("'"+currentTab+"'")));
-    renderAdmin(currentTab);
-  }
-  else { gate.style.display='block'; panel.style.display='none'; }
+  document.querySelectorAll('.admin-tab button').forEach(b =>
+    b.classList.toggle('on', (b.getAttribute('onclick') || '').includes("'" + currentTab + "'")));
+  renderAdmin(currentTab);
 }
 
 function admTab(t, btn){
@@ -708,8 +634,13 @@ function admTab(t, btn){
 }
 
 // ---- Écriture en base (réservée aux admins par les règles RLS) ----
+function rlsHint(error, prefix){
+  const denied = /row-level security|permission denied|violates/i.test(error.message || '');
+  return prefix + ' : ' + (denied ? "droits refusés. Exécutez supabase/open_access.sql dans Supabase." : error.message);
+}
+
 async function dbUpsert(t, i){
-  if(LOCAL_TEST){
+  if(LOCAL_MODE){
     if(lsSet(LS_DATA, DATA)) return true;
     toast('Stockage du navigateur plein : réduisez les images.', 'err');
     return false;
@@ -717,7 +648,7 @@ async function dbUpsert(t, i){
   const { id, ...rest } = DATA[t][i];
   const { error } = await supabaseClient.from('sd_items')
     .upsert({ collection: t, id, position: i, data: rest }, { onConflict: 'collection,id' });
-  if(error){ toast('Erreur de sauvegarde : ' + error.message, 'err'); return false; }
+  if(error){ toast(rlsHint(error, 'Erreur de sauvegarde')); return false; }
   return true;
 }
 
@@ -770,12 +701,12 @@ async function moveItem(t, i, dir){
 
 async function delItem(t, i){
   if(!confirm('Supprimer cet élément définitivement ?')) return;
-  if(!LOCAL_TEST){
+  if(!LOCAL_MODE){
     const { error } = await supabaseClient.from('sd_items').delete().eq('collection', t).eq('id', DATA[t][i].id);
-    if(error){ toast('Suppression impossible : ' + error.message, 'err'); return; }
+    if(error){ toast(rlsHint(error, 'Suppression impossible'), 'err'); return; }
   }
   DATA[t].splice(i, 1);
-  if(LOCAL_TEST) lsSet(LS_DATA, DATA);
+  if(LOCAL_MODE) lsSet(LS_DATA, DATA);
   renderAdmin(t);
 }
 
@@ -806,7 +737,7 @@ async function handleImageUpload(event, t, i){
   try {
     toast('Envoi de l\'image…');
     let url;
-    if(LOCAL_TEST){
+    if(LOCAL_MODE){
       const small = await resizeToJpeg(file, 800);
       url = await new Promise((res, rej) => {
         const r = new FileReader();
@@ -827,47 +758,18 @@ async function handleImageUpload(event, t, i){
     if(await dbUpsert(t, i)){ renderAdmin(t); toast('Image mise en ligne', 'ok'); }
     else DATA[t][i].image = previous;
   } catch(e) {
-    toast('Échec de l\'envoi : ' + (e.message || e), 'err');
+    toast(rlsHint(e, 'Échec de l\'envoi'), 'err');
   }
-}
-
-// ---- Messages reçus via le formulaire de contact ----
-async function renderMessages(){
-  const el = document.getElementById('admContent'); if(!el) return;
-  el.innerHTML = '<p style="padding:12px">Chargement…</p>';
-  let data, error = null;
-  if(LOCAL_TEST) data = lsGet(LS_MSG, []);
-  else ({ data, error } = await supabaseClient.from('sd_contacts')
-    .select('*').order('created_at', { ascending: false }).limit(100));
-  if(error){ el.innerHTML = `<p style="color:#e5484d;padding:12px">${esc(error.message)}</p>`; return; }
-  el.innerHTML = data.length ? data.map(m => `
-    <div class="admin-edit">
-      <label>${esc(new Date(m.created_at).toLocaleString('fr-FR'))}</label>
-      <b>${esc(m.name)}</b> ·
-      <a href="mailto:${esc(m.email)}" style="color:var(--red)">${esc(m.email)}</a> ·
-      <a href="tel:${esc(m.phone)}" style="color:var(--red)">${esc(m.phone)}</a>
-      <p style="font-size:13px;margin-top:8px;white-space:pre-wrap">${esc(m.message)}</p>
-      <button class="admin-del" onclick="delMessage('${esc(m.id)}')">Supprimer</button>
-    </div>`).join('') : '<p style="padding:12px">Aucun message.</p>';
-}
-
-async function delMessage(id){
-  if(!confirm('Supprimer ce message ?')) return;
-  if(LOCAL_TEST){ lsSet(LS_MSG, lsGet(LS_MSG, []).filter(m => m.id !== id)); renderMessages(); return; }
-  const { error } = await supabaseClient.from('sd_contacts').delete().eq('id', id);
-  if(error){ toast('Suppression impossible : ' + error.message, 'err'); return; }
-  renderMessages();
 }
 
 // ---- Rendu de l'éditeur ----
 function renderAdmin(t){
   const el = document.getElementById('admContent'); if(!el) return;
-  if(t === 'messages'){ renderMessages(); return; }
   const items = DATA[t] || [];
 
   const addBtn = (extra='') => `<button class="btn btn-primary" style="min-height:40px;padding:8px 14px;${extra}" onclick="addItem('${t}')">+ Ajouter ${ADD_LABEL[t]||''}</button>`;
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><b>${items.length} élément${items.length>1?'s':''}</b>${addBtn()}</div>
-    <p style="font-size:12px;color:var(--ink-soft);margin-bottom:12px">${LOCAL_TEST ? '🧪 Mode test local : les modifications sont enregistrées dans ce navigateur uniquement (pas de Supabase).' : 'Il n\'y a pas de limite au nombre d\'éléments. Les modifications sont enregistrées automatiquement et visibles par tous les visiteurs.'}</p>` +
+    <p style="font-size:12px;color:var(--ink-soft);margin-bottom:12px">${LOCAL_MODE ? '🧪 Mode local : les modifications sont enregistrées dans ce navigateur uniquement (Supabase non configuré).' : 'Il n\'y a pas de limite au nombre d\'éléments. Les modifications sont enregistrées automatiquement et visibles par tous les visiteurs.'}</p>` +
   items.map((it,i)=>{
     const nameKey = ('name' in it) ? 'name' : 'title';
     return `
@@ -930,14 +832,6 @@ async function submitContact(e){
   e.preventDefault();
   const f = e.target;
   if(f.website && f.website.value){ f.reset(); toast('Demande envoyée !','ok'); return; } // anti-spam (champ piège)
-  if(LOCAL_TEST){
-    const msgs = lsGet(LS_MSG, []);
-    msgs.unshift({ id:String(Date.now()), name:f.cName.value.trim(), email:f.cEmail.value.trim(), phone:f.cPhone.value.trim(), message:f.cMsg.value.trim(), created_at:new Date().toISOString() });
-    lsSet(LS_MSG, msgs);
-    toast('Demande enregistrée (mode test local)','ok');
-    f.reset();
-    return;
-  }
   if(!supabaseClient){ toast('Service indisponible. Appelez-nous directement.','err'); return; }
   const btn = f.querySelector('button[type=submit]');
   const row = { name:f.cName.value.trim(), email:f.cEmail.value.trim(), phone:f.cPhone.value.trim(), message:f.cMsg.value.trim() };
@@ -960,7 +854,7 @@ function showCGV(){ document.getElementById('cgvModal').style.display = 'block';
 
 // DÉMARRAGE
 document.addEventListener('DOMContentLoaded', async ()=>{
-  if(LOCAL_TEST){
+  if(LOCAL_MODE){
     const saved = lsGet(LS_DATA, null);
     if(saved) Object.keys(DEFAULT_DATA).forEach(k => { if(Array.isArray(saved[k])) DATA[k] = saved[k]; });
   }
@@ -968,13 +862,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   renderSpeedConnectImages();
   document.getElementById('simKva')?.addEventListener('change', updateSim);
   document.getElementById('simWeeks')?.addEventListener('input', updateSim);
-  if(CFG.ADMIN_EMAIL || LOCAL_TEST){ const em = document.getElementById('adminEmail'); if(em) em.style.display = 'none'; }
-  document.getElementById('adminCode')?.addEventListener('keydown', e=>{ if(e.key==='Enter') adminLogin(); });
   updateSim();
-  if(supabaseClient){
-    await loadRemoteData();
-    isAdmin = await checkIsAdmin(); // session restaurée par Supabase
-  }
+  if(supabaseClient) await loadRemoteData();
 });
 </script>
 </body>
